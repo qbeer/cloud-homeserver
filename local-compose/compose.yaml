@@ -1,0 +1,88 @@
+services:
+  sonarr:
+    image: linuxserver/sonarr:latest
+    container_name: sonarr
+    volumes:
+      - /mnt/drive/Sonarr/config:/config
+      - /mnt/drive/Sonarr/TV:/media/tv
+      - /mnt/drive/Downloads:/downloads   # Unified downloads folder
+    ports:
+      - 8989:8989
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+    restart: unless-stopped
+
+  radarr:
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    volumes:
+      - /mnt/drive/Radarr/config:/config
+      - /mnt/drive/Radarr/Movies:/media/movies
+      - /mnt/drive/Downloads:/downloads   # Unified downloads folder
+    ports:
+      - 7878:7878
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+    restart: unless-stopped
+
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+    volumes:
+      - /mnt/drive/Transmission/config:/config
+      - /mnt/drive/Downloads:/downloads    # Unified downloads folder
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    volumes:
+      - /mnt/drive/Radarr/Movies:/media/movies
+      - /mnt/drive/Sonarr/TV:/media/tv
+      - /mnt/drive/Jellyfin/config:/config
+      - /mnt/drive/Jellyfin/cache:/cache
+    ports:
+      - 8096:8096      # Jellyfin web interface
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+    volumes:
+      - /mnt/drive/Prowlarr/config:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=Europe/Budapest
+      - PORT=5055 #optional
+    ports:
+      - 5055:5055
+    volumes:
+      - /mnt/drive/Jellyseerr/config:/app/config
+    restart: unless-stopped
