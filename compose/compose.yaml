@@ -1,138 +1,190 @@
 services:
-  proxy:
-    image: traefik
-    container_name: traefik
-    depends_on: 
-      - authelia
-    restart: unless-stopped
-    command:
-      - "--log.level=DEBUG"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=duckdns"
-      - "--certificatesresolvers.letsencrypt.acme.email=mail@mail.com"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.disablePropagationCheck=true"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.websecure.http.tls=true"
-      - "--entrypoints.websecure.http.tls.certResolver=letsencrypt"
-      - "--entrypoints.websecure.http.tls.domains[0].main=${MY_DOMAIN}"
-      - "--entrypoints.websecure.http.tls.domains[0].sans=*.${MY_DOMAIN}"
-    volumes:
-      - "../data/traefik/letsencrypt:/letsencrypt"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.api.rule=Host(`${MY_DOMAIN}`)'
-      - 'traefik.http.routers.api.entryPoints=websecure'
-      - 'traefik.http.routers.api.service=api@internal'
-      - 'traefik.http.routers.api.middlewares=authelia@docker'
-    ports:
-      - "443:443"
-      - "80:80"
-    environment:
-      DUCKDNS_TOKEN: "${DUCKDNS_TOKEN}"
-
-  authelia_redis:
-    image: redis
-    restart: unless-stopped
-    container_name: authelia_redis
-
-  authelia_generate_secrets:
-    build: generate_secrets
-    volumes:
-      - ../data/authelia/secrets:/secrets
-
-  authelia:
-    image: authelia/authelia
-    container_name: authelia
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.authelia.rule=Host(`auth.${MY_DOMAIN}`)'
-      - 'traefik.http.routers.authelia.entryPoints=websecure'
-      - 'traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/authz/forward-auth'
-      - 'traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true'
-      - 'traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name'
-    depends_on:
-      authelia_generate_secrets:
-        condition: service_completed_successfully
-    volumes:
-      - ../data/authelia:/config
-    restart: unless-stopped
-    expose: 
-      - 9091
-    environment:
-      TZ: Europe/Amsterdam
-      X_AUTHELIA_CONFIG_FILTERS: template
-      MY_DOMAIN: ${MY_DOMAIN}
-      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/JWT_SECRET
-      AUTHELIA_SESSION_SECRET_FILE: /config/secrets/SESSION_SECRET
-      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/STORAGE_ENCRYPTION_KEY
-
   sonarr:
-    container_name: sonarr
     image: linuxserver/sonarr:latest
-    restart: unless-stopped
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.sonarr.rule=Host(`sonarr.${MY_DOMAIN}`)'
-      - 'traefik.http.routers.sonarr.entryPoints=websecure'
-      - 'traefik.http.routers.sonarr.middlewares=authelia@docker'
-    environment:
-      TZ: Europe/Amsterdam
+    container_name: sonarr
     volumes:
-      - ../data/sonarr:/config
-      - /mnt/media/TV:/tv
-      - /mnt/media/Downloads:/downloads
+      - /mnt/drive/Sonarr/config:/config
+      - /mnt/drive/Sonarr/TV:/media/tv
+      - /mnt/drive/Downloads:/downloads   # Unified downloads folder
+    ports:
+      - 8989:8989
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+    restart: unless-stopped
 
   radarr:
-    container_name: radarr
     image: linuxserver/radarr:latest
-    restart: unless-stopped
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.radarr.rule=Host(`radarr.${MY_DOMAIN}`)'
-      - 'traefik.http.routers.radarr.entryPoints=websecure'
-      - 'traefik.http.routers.radarr.middlewares=authelia@docker'
-    environment:
-      TZ: Europe/Amsterdam
+    container_name: radarr
     volumes:
-      - ../data/radarr:/config
-      - /mnt/media/Movies:/movies
-      - /mnt/media/Downloads:/downloads
+      - /mnt/drive/Radarr/config:/config
+      - /mnt/drive/Radarr/Movies:/media/movies
+      - /mnt/drive/Downloads:/downloads   # Unified downloads folder
+    ports:
+      - 7878:7878
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+    restart: unless-stopped
 
-  deluge:
-    container_name: deluge
-    image: linuxserver/deluge:latest
-    restart: unless-stopped
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.deluge.rule=Host(`deluge.${MY_DOMAIN}`)'
-      - 'traefik.http.routers.deluge.entryPoints=websecure'
-      - 'traefik.http.routers.deluge.middlewares=authelia@docker'
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
     environment:
-      TZ: Europe/Amsterdam
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
     volumes:
-      - ../data/deluge:/config
-      - /mnt/media/Downloads:/downloads
+      - /mnt/drive/Transmission/config:/config
+      - /mnt/drive/Downloads:/downloads    # Unified downloads folder
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
 
   jellyfin:
-    container_name: jellyfin
     image: jellyfin/jellyfin:latest
-    restart: unless-stopped
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.jellyfin.rule=Host(`jellyfin.${MY_DOMAIN}`)'
-      - 'traefik.http.routers.jellyfin.entryPoints=websecure'
-    environment:
-      TZ: Europe/Amsterdam
+    container_name: jellyfin
     volumes:
-      - ../data/jellyfin:/config
-      - /mnt/media/Movies:/movies
-      - /mnt/media/TV:/tv
+      - /mnt/drive/Radarr/Movies:/media/movies
+      - /mnt/drive/Sonarr/TV:/media/tv
+      - /mnt/drive/Jellyfin/config:/config
+      - /mnt/drive/Jellyfin/cache:/cache
+      - /dev/bus/usb:/dev/bus/usb
+    ports:
+      - 8096:8096
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+    volumes:
+      - /mnt/drive/Prowlarr/config:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=Europe/Budapest
+      - PORT=5055 #optional
+    ports:
+      - 5055:5055
+    volumes:
+      - /mnt/drive/Jellyseerr/config:/app/config
+    restart: unless-stopped
+
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v1.12.0 # 
+    container_name: mealie
+    restart: unless-stopped
+    ports:
+        - 9925:9000
+    deploy:
+      resources:
+        limits:
+          memory: 1000M # 
+    volumes:
+      - /mnt/drive/Mealie:/app/data/
+    environment:
+      # Set Backend ENV Variables Here
+      ALLOW_SIGNUP: "false"
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Budapest
+      MAX_WORKERS: 1
+      WEB_CONCURRENCY: 1
+      BASE_URL: 192.168.0.122:9925
+
+  nginx-reverseproxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      # These ports are in format <host-port>:<container-port>
+      - '6666:80' # Public HTTP Port
+      - '443:443' # Public HTTPS Port
+      - '81:81' # Admin Web Port
+
+    volumes:
+      - /mnt/drive/Nginx/data:/data
+      - /mnt/drive/Nginx/letsencrypt:/etc/letsencrypt
+
+  ## IMMICH SERVICES
+  immich:
+    container_name: immich
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    extends:
+      file: hwaccel.transcoding.yml
+      service: quicksync
+    volumes:
+      # Do not edit the next line. If you want to change the media storage location on your system, edit the value of UPLOAD_LOCATION in the .env file
+      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    env_file:
+      - .env
+    ports:
+      - 2283:3001
+    depends_on:
+      - redis
+      - database
+    restart: always
+    healthcheck:
+      disable: false
+
+  immich-machine-learning:
+    container_name: immich_machine_learning
+    # For hardware acceleration, add one of -[armnn, cuda, openvino] to the image tag.
+    # Example tag: ${IMMICH_VERSION:-release}-cuda
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    extends: # uncomment this section for hardware acceleration - see https://immich.app/docs/features/ml-hardware-acceleration
+      file: hwaccel.ml.yml
+      service: openvino # set to one of [armnn, cuda, openvino, openvino-wsl] for accelerated inference - use the `-wsl` version for WSL2 where applicable
+    volumes:
+      - /mnt/drive/Immich/cache:/cache
+    env_file:
+      - .env
+    restart: always
+    healthcheck:
+      disable: false
+
+  redis:
+    container_name: immich_redis
+    image: docker.io/redis:6.2-alpine@sha256:2d1463258f2764328496376f5d965f20c6a67f66ea2b06dc42af351f75248792
+    healthcheck:
+      test: redis-cli ping || exit 1
+    restart: always
+
+  database:
+    container_name: immich_postgres
+    image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      # Do not edit the next line. If you want to change the database storage location on your system, edit the value of DB_DATA_LOCATION in the .env file
+      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready --dbname='${DB_DATABASE_NAME}' --username='${DB_USERNAME}' || exit 1; Chksum="$$(psql --dbname='${DB_DATABASE_NAME}' --username='${DB_USERNAME}' --tuples-only --no-align --command='SELECT COALESCE(SUM(checksum_failures), 0) FROM pg_stat_database')"; echo "checksum failure count is $$Chksum"; [ "$$Chksum" = '0' ] || exit 1
+      interval: 5m
+      start_interval: 30s
+      start_period: 5m
+    command: ["postgres", "-c", "shared_preload_libraries=vectors.so", "-c", 'search_path="$$user", public, vectors', "-c", "logging_collector=on", "-c", "max_wal_size=2GB", "-c", "shared_buffers=512MB", "-c", "wal_compression=on"]
+    restart: always
