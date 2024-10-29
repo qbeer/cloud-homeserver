@@ -6,3 +6,10 @@
 
 3) docker logs -f jellyfin
 
+## restart - remove - rebuild
+
+```bash
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+docker compose up -d --build --remove-orphans
+```
