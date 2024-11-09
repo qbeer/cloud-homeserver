@@ -114,6 +114,7 @@ services:
 
   nginx-reverseproxy-manager:
     image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-reverseproxy-manager
     restart: unless-stopped
     ports:
       # These ports are in format <host-port>:<container-port>
@@ -124,4 +125,20 @@ services:
     volumes:
       - /mnt/drive/Nginx/data:/data
       - /mnt/drive/Nginx/letsencrypt:/etc/letsencrypt
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+    - TZ=Europe/Budapest
+    - WATCHTOWER_DEBUG=true
+    - WATCHTOWER_NOTIFICATIONS_LEVEL=debug
+    - WATCHTOWER_CLEANUP=true
+    - WATCHTOWER_INCLUDE_STOPPED=true
+    - WATCHTOWER_POLL_INTERVAL=86400
+    - WATCHTOWER_NO_PULL=false
+    - WATCHTOWER_MONITOR_ONLY=false
+    restart: unless-stopped
 
