@@ -90,33 +90,11 @@ services:
       - /mnt/drive/Jellyseerr/config:/app/config
     restart: unless-stopped
 
-  mealie:
-    image: ghcr.io/mealie-recipes/mealie:v1.12.0 # 
-    container_name: mealie
-    restart: unless-stopped
-    ports:
-        - 9925:9000
-    deploy:
-      resources:
-        limits:
-          memory: 1000M # 
-    volumes:
-      - /mnt/drive/Mealie:/app/data/
-    environment:
-      # Set Backend ENV Variables Here
-      ALLOW_SIGNUP: "false"
-      PUID: 1000
-      PGID: 1000
-      TZ: Europe/Budapest
-      MAX_WORKERS: 1
-      WEB_CONCURRENCY: 1
-      BASE_URL: 192.168.0.122:9925
-
   nginx-reverseproxy-manager:
     image: 'jc21/nginx-proxy-manager:latest'
     container_name: nginx-reverseproxy-manager
     restart: unless-stopped
-    ports:
+    ports: 
       # These ports are in format <host-port>:<container-port>
       - '6666:80' # Public HTTP Port
       - '443:443' # Public HTTPS Port
@@ -125,6 +103,15 @@ services:
     volumes:
       - /mnt/drive/Nginx/data:/data
       - /mnt/drive/Nginx/letsencrypt:/etc/letsencrypt
+
+  actual_server:
+    image: docker.io/actualbudget/actual-server:latest
+    container_name: actual_server
+    ports:
+      - '5006:5006'
+    volumes:
+      - /mnt/drive/Actual:/data
+    restart: unless-stopped
 
   watchtower:
     image: containrrr/watchtower
