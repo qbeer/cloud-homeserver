@@ -129,3 +129,25 @@ services:
     - WATCHTOWER_MONITOR_ONLY=false
     restart: unless-stopped
 
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - /mnt/drive/HomeAssistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    environment:
+      - TZ=Europe/Budapest
+
+  yacht:
+    container_name: yacht
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - /mnt/drive/Yacht:/config
+      - /var/run/docker.sock:/var/run/docker.sock
+    image: selfhostedpro/yacht

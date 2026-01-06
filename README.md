@@ -2,9 +2,15 @@
 
 1) Mounted my hard drive to `/mnt/drive` and created the folders `Movies`, `TV`, `Downloads` so that the mounted volumes are `/mnt/drive/Movies`, `/mnt/drive/TV`, `/mnt/drive/Downloads`.
 
-2) docker compose up -d --build # To build the images and start the containers.
+2) Run `python create_dirs.py` inside the compose/ directory.
 
-3) docker logs -f jellyfin
+3) docker compose up -d --build # To build the images and start the containers.
+
+## Check logs from a specific service
+
+```bash
+docker logs -f jellyfin
+```
 
 ## restart - remove - rebuild
 
