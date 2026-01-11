@@ -46,9 +46,19 @@ To ensure the server starts automatically on boot (and waits for your drive to m
     sudo systemctl start cloud-homeserver.service
     ```
 
-## Utilities
-
 - **Sync/Backup**: `scripts/sync.sh` uses rsync to backup your data (excluding large media files) to a backup location.
+
+## Optional Modules
+
+### Immich (Photo Backup)
+Immich is included but disabled by default. To enable it:
+
+1.  Add the Immich variables to your `.env` file (see `.env.example`).
+2.  Start the stack with the localized compose file:
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.immich.yml up -d
+    ```
+    *Note: You may need to create the directories defined in your `.env` manually, as the auto-script currently only scans the main compose file.*
 
 ## Troubleshooting
 
