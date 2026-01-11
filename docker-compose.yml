@@ -3,42 +3,42 @@ services:
     image: linuxserver/sonarr:latest
     container_name: sonarr
     volumes:
-      - /mnt/drive/Sonarr/config:/config
-      - /mnt/drive/Sonarr/TV:/media/tv
-      - /mnt/drive/Downloads:/downloads   # Unified downloads folder
+      - ${ROOT_DIR}/Sonarr/config:/config
+      - ${ROOT_DIR}/Sonarr/TV:/media/tv
+      - ${ROOT_DIR}/Downloads:/downloads   # Unified downloads folder
     ports:
       - 8989:8989
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Budapest
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     restart: unless-stopped
 
   radarr:
     image: linuxserver/radarr:latest
     container_name: radarr
     volumes:
-      - /mnt/drive/Radarr/config:/config
-      - /mnt/drive/Radarr/Movies:/media/movies
-      - /mnt/drive/Downloads:/downloads   # Unified downloads folder
+      - ${ROOT_DIR}/Radarr/config:/config
+      - ${ROOT_DIR}/Radarr/Movies:/media/movies
+      - ${ROOT_DIR}/Downloads:/downloads   # Unified downloads folder
     ports:
       - 7878:7878
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Budapest
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     restart: unless-stopped
 
   transmission:
     image: lscr.io/linuxserver/transmission:latest
     container_name: transmission
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Budapest
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     volumes:
-      - /mnt/drive/Transmission/config:/config
-      - /mnt/drive/Downloads:/downloads    # Unified downloads folder
+      - ${ROOT_DIR}/Transmission/config:/config
+      - ${ROOT_DIR}/Downloads:/downloads    # Unified downloads folder
     ports:
       - 9091:9091
       - 51413:51413
@@ -49,30 +49,30 @@ services:
     image: jellyfin/jellyfin:latest
     container_name: jellyfin
     volumes:
-      - /mnt/drive/Radarr/Movies:/media/movies
-      - /mnt/drive/Sonarr/TV:/media/tv
-      - /mnt/drive/Jellyfin/config:/config
-      - /mnt/drive/Jellyfin/cache:/cache
+      - ${ROOT_DIR}/Radarr/Movies:/media/movies
+      - ${ROOT_DIR}/Sonarr/TV:/media/tv
+      - ${ROOT_DIR}/Jellyfin/config:/config
+      - ${ROOT_DIR}/Jellyfin/cache:/cache
       - /dev/bus/usb:/dev/bus/usb
     ports:
       - 8096:8096
     devices:
       - /dev/dri:/dev/dri
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Budapest
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     restart: unless-stopped
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Budapest
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     volumes:
-      - /mnt/drive/Prowlarr/config:/config
+      - ${ROOT_DIR}/Prowlarr/config:/config
     ports:
       - 9696:9696
     restart: unless-stopped
@@ -82,12 +82,12 @@ services:
     container_name: jellyseerr
     environment:
       - LOG_LEVEL=debug
-      - TZ=Europe/Budapest
+      - TZ=${TZ}
       - PORT=5055 #optional
     ports:
       - 5055:5055
     volumes:
-      - /mnt/drive/Jellyseerr/config:/app/config
+      - ${ROOT_DIR}/Jellyseerr/config:/app/config
     restart: unless-stopped
 
   nginx-reverseproxy-manager:
@@ -101,8 +101,8 @@ services:
       - '81:81' # Admin Web Port
 
     volumes:
-      - /mnt/drive/Nginx/data:/data
-      - /mnt/drive/Nginx/letsencrypt:/etc/letsencrypt
+      - ${ROOT_DIR}/Nginx/data:/data
+      - ${ROOT_DIR}/Nginx/letsencrypt:/etc/letsencrypt
 
   actual_server:
     image: docker.io/actualbudget/actual-server:latest
@@ -110,7 +110,7 @@ services:
     ports:
       - '5006:5006'
     volumes:
-      - /mnt/drive/Actual:/data
+      - ${ROOT_DIR}/Actual:/data
     restart: unless-stopped
 
   watchtower:
@@ -119,7 +119,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-    - TZ=Europe/Budapest
+    - TZ=${TZ}
     - WATCHTOWER_DEBUG=true
     - WATCHTOWER_NOTIFICATIONS_LEVEL=debug
     - WATCHTOWER_CLEANUP=true
@@ -133,14 +133,14 @@ services:
     container_name: homeassistant
     image: "ghcr.io/home-assistant/home-assistant:stable"
     volumes:
-      - /mnt/drive/HomeAssistant/config:/config
+      - ${ROOT_DIR}/HomeAssistant/config:/config
       - /etc/localtime:/etc/localtime:ro
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped
     privileged: true
     network_mode: host
     environment:
-      - TZ=Europe/Budapest
+      - TZ=${TZ}
 
   yacht:
     container_name: yacht
@@ -148,6 +148,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /mnt/drive/Yacht:/config
+      - ${ROOT_DIR}/Yacht:/config
       - /var/run/docker.sock:/var/run/docker.sock
     image: selfhostedpro/yacht

@@ -1,1 +1,0 @@
-rsync -arv --progress --exclude='Books/' --exclude='Deluge/' --exclude='Downloads/' --exclude='Immich/' --exclude='Misc/' --exclude='Radarr/Movies/' --exclude='Sonarr/TV/' /mnt/drive/ /home/olaralex/backups/medialab
