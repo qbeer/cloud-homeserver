@@ -7,8 +7,10 @@ RequiresMountsFor=/mnt/drive
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+Restart=on-failure
+RestartSec=30
 WorkingDirectory=/home/olaralex/Documents/GitHub/cloud-homeserver
-ExecStart=/usr/bin/docker compose up -d --remove-orphans
+ExecStart=/home/olaralex/Documents/GitHub/cloud-homeserver/scripts/start_stack.sh
 ExecStop=/usr/bin/docker compose stop
 
 [Install]

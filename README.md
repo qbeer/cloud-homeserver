@@ -4,76 +4,131 @@ A Docker Compose based home server setup for media management and home automatio
 
 ## Project Structure
 
-- `docker-compose.yml`: Main service definition.
-- `scripts/`: Helper scripts for setup and maintenance.
-- `systemd/`: Systemd service files for automatic startup.
-- `.env`: (Created from `.env.example`) Configuration variables.
+- `docker-compose.yml` / `docker-compose.immich.yml`: Service definitions.
+- `scripts/`:
+  - `start_stack.sh` -- boot-verified entry point (mount check + compose up + post-check).
+  - `create_dirs.py` -- creates all directories referenced by the compose files.
+  - `sync.sh` -- rsync backup helper.
+- `systemd/`:
+  - `cloud-homeserver.service` -- systemd unit that calls `start_stack.sh`.
+  - `docker.service.d/wait-for-mount.conf` -- drop-in that forces Docker to wait for the drive mount before starting the daemon.
+- `.env` (created from `.env.example`)
 
 ## Getting Started
 
 ### 1. Configuration
 
-1.  Copy the example environment file:
-    ```bash
-    cp .env.example .env
-    ```
-2.  Edit `.env` and set your configuration variables, especially `ROOT_DIR` (where your media drive is mounted).
-    ```bash
-    nano .env
-    ```
+```bash
+cp .env.example .env
+nano .env   # set PUID, PGID, TZ, ROOT_DIR (where your drive is mounted)
+```
 
 ### 2. Setup
 
-1.  Create necessary directories:
-    ```bash
-    python3 scripts/create_dirs.py
-    ```
-2.  Start the containers:
-    ```bash
-    docker compose up -d
-    ```
+```bash
+python3 scripts/create_dirs.py
+docker compose up -d
+```
 
 ### 3. Automatic Startup (Systemd)
 
-To ensure the server starts automatically on boot (and waits for your drive to mount):
+Docker's `restart: unless-stopped` policy causes the daemon to restart every
+container the instant it starts. If the drive is not yet mounted, all configs
+are silently written to empty directories. Two systemd units fix this:
 
-1.  Edit `systemd/cloud-homeserver.service` and ensure the paths are correct for your system.
-2.  Install the service:
-    ```bash
-    sudo cp systemd/cloud-homeserver.service /etc/systemd/system/
-    sudo systemctl daemon-reload
-    sudo systemctl enable cloud-homeserver.service
-    sudo systemctl start cloud-homeserver.service
-    ```
+1. **`wait-for-mount.conf`** (docker drop-in) -- blocks the Docker daemon until
+   the drive is mounted.
+2. **`cloud-homeserver.service`** -- calls `start_stack.sh`, which double-checks
+   the mount is real before running `docker compose up`.
 
-- **Sync/Backup**: `scripts/sync.sh` uses rsync to backup your data (excluding large media files) to a backup location.
+Install both:
+
+```bash
+# Drop-in (blocks dockerd until the drive is mounted)
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo cp systemd/docker.service.d/wait-for-mount.conf \
+ /etc/systemd/system/docker.service.d/wait-for-mount.conf
+
+# Homeserver service
+sudo cp systemd/cloud-homeserver.service /etc/systemd/system/
+
+sudo systemctl daemon-reload
+sudo systemctl enable cloud-homeserver.service
+sudo systemctl start cloud-homeserver.service
+```
+
+**Fstab hardening (recommended):** give a slow drive enough time to spin up
+without boot hanging. In `/etc/fstab` update the `/mnt/drive` line:
+
+```
+# Before:
+/dev/disk/by-uuid/... /mnt/drive auto nosuid,nodev,nofail,x-gvfs-show 0 0
+
+# After:
+/dev/disk/by-uuid/... /mnt/drive auto nosuid,nodev,nofail,x-systemd.device-timeout=120 0 0
+```
+
+This drops the cosmetic `x-gvfs-show` and adds a 2-minute timeout so systemd
+waits for a slow drive. Boot never hangs because `nofail` is kept.
+
+## Troubleshooting
+
+### Apps empty after reboot (fixed since 2026-09-11)
+
+**Root cause:** Docker's restart policy restarted all containers before the
+drive was mounted, pointing bind-mounts at empty directories. This is now
+prevented by two systemd units (see Automatic Startup above).
+
+If you are still running the old setup without the fix, or if the drive was
+physically missing/disconnected at boot:
+
+```bash
+# 1. Verify the drive is a real mount (not just an empty directory):
+findmnt -rn -o SOURCE /mnt/drive
+
+# 2. If it is, restart the stack:
+sudo systemctl restart cloud-homeserver.service
+
+# If the drive was absent, plug it in first, then:
+sudo systemctl start mnt-drive.mount
+sudo systemctl restart cloud-homeserver.service
+```
+
+### "Container name already in use" error
+
+This happens when containers exist from a different compose project or a stale run:
+
+```bash
+docker rm -f sonarr radarr transmission jellyfin prowlarr jellyseerr \
+            nginx-reverseproxy-manager actual_server watchtower \
+            homeassistant yacht
+docker compose up -d
+```
 
 ## Optional Modules
 
 ### Immich (Photo Backup)
-Immich is included but disabled by default. To enable it:
 
-1.  Add the Immich variables to your `.env` file (see `.env.example`).
-2.  Start the stack with the localized compose file:
-    ```bash
-    docker compose -f docker-compose.yml -f docker-compose.immich.yml up -d
-    ```
-    *Note: You may need to create the directories defined in your `.env` manually, as the auto-script currently only scans the main compose file.*
-
-## Troubleshooting
-
-### Configs not loading on reboot
-If you restart your computer and find that containers are empty or missing configurations, it is likely because Docker started *before* your external drive was mounted.
-**Solution:** Use the included systemd service (see "Automatic Startup" above). It is configured to wait for the mount point before starting Docker containers.
-
-### "Container name already in use" error
-If you see errors like `Conflict. The container name "/sonarr" is already in use`, it usually means you have containers running from a previous setup (or different directory).
-**Solution:**
-1. Stop and remove the old containers:
+1. Add the Immich variables to your `.env` (see `.env.example`).
+2. Start with the Immich compose file:
    ```bash
-   docker rm -f sonarr radarr transmission jellyfin prowlarr jellyseerr nginx-reverseproxy-manager actual_server watchtower homeassistant yacht
+   docker compose -f docker-compose.yml -f docker-compose.immich.yml up -d
    ```
-2. Start the stack again:
-   ```bash
-   docker compose up -d
-   ```
+
+## Optional Hardening Notes
+
+- **Watchtower + Yacht** both mount `/var/run/docker.sock`, giving them full
+  control over all containers on this host. Consider scoping Watchtower to only
+  containers with `com.centurylinklabs.watchtower.enable=true` and removing
+  Yacht if you do not actively use its web UI.
+- **HomeAssistant** runs in privileged mode with host networking. This is
+  intentional for Home Assistant but limits container isolation.
+- **Leftover directory:** `/mnt/drive/Mealie` exists on the drive but Mealie
+  was removed from the compose file. Safe to delete.
+
+
+## Docker useful info
+
+```
+systemctl status cloud-homeserver.service && findmnt -rn -o SOURCE /mnt/drive
+```

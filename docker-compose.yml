@@ -77,9 +77,10 @@ services:
       - 9696:9696
     restart: unless-stopped
 
-  jellyseerr:
-    image: fallenbagel/jellyseerr:latest
-    container_name: jellyseerr
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
     environment:
       - LOG_LEVEL=debug
       - TZ=${TZ}
@@ -96,7 +97,7 @@ services:
     restart: unless-stopped
     ports: 
       # These ports are in format <host-port>:<container-port>
-      - '6666:80' # Public HTTP Port
+      - '80:80' # Public HTTP Port
       - '443:443' # Public HTTPS Port
       - '81:81' # Admin Web Port
 
@@ -114,19 +115,15 @@ services:
     restart: unless-stopped
 
   watchtower:
-    image: containrrr/watchtower
+    image: containrrr/watchtower:1.7.1
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
     - TZ=${TZ}
-    - WATCHTOWER_DEBUG=true
-    - WATCHTOWER_NOTIFICATIONS_LEVEL=debug
     - WATCHTOWER_CLEANUP=true
-    - WATCHTOWER_INCLUDE_STOPPED=true
-    - WATCHTOWER_POLL_INTERVAL=86400
-    - WATCHTOWER_NO_PULL=false
-    - WATCHTOWER_MONITOR_ONLY=false
+    - WATCHTOWER_NOTIFICATIONS_LEVEL=info
+    - WATCHTOWER_SCHEDULE=0 15 * * *
     restart: unless-stopped
 
   homeassistant:
