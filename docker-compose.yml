@@ -46,13 +46,15 @@ services:
     restart: unless-stopped
 
   jellyfin:
-    image: jellyfin/jellyfin:latest
+    image: jellyfin/jellyfin@sha256:baba630419915985442f315f08b0cf46d9f4c8a0cc4bd38e94a6d35751dd5ef5
     container_name: jellyfin
+    labels:
+      - com.centurylinklabs.watchtower.enable=false
     volumes:
       - ${ROOT_DIR}/Radarr/Movies:/media/movies
       - ${ROOT_DIR}/Sonarr/TV:/media/tv
       - ${ROOT_DIR}/Jellyfin/config:/config
-      - ${ROOT_DIR}/Jellyfin/cache:/cache
+      - /home/olaralex/jellyfin-cache:/cache
       - /dev/bus/usb:/dev/bus/usb
     ports:
       - 8096:8096
