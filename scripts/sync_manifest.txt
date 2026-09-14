@@ -1,0 +1,46 @@
+# Config files mirrored into ./data by `scripts/sync.sh --config`.
+# Paths are relative to ROOT_DIR (the drive root).
+#
+# Tracked only if they contain NO credentials and give restore value.
+# Anything with live secrets (API keys, RPC passwords, session secrets) is
+# intentionally absent — keys are regenerated in the web UIs after a restore:
+#   Sonarr/Radarr/Prowlarr config.xml (ApiKey), Transmission settings.json
+#   (rpc-password), Jellyseerr settings.json (sessionSecret / apiKeys).
+
+# --- Sonarr / Radarr / Prowlarr (structural files only; ApiKey excluded) ---
+# (config.xml skipped by design)
+
+# --- Transmission (queue/bandwidth only; rpc-password skipped) ---
+Transmission/config/bandwidth-groups.json
+Transmission/config/queue.json
+
+# --- Jellyfin ---
+Jellyfin/config/config/system.xml
+Jellyfin/config/config/encoding.xml
+Jellyfin/config/config/network.xml
+Jellyfin/config/config/database.xml
+Jellyfin/config/config/logging.default.json
+Jellyfin/config/config/migrations.xml.backup
+Jellyfin/config/root/default/
+Jellyfin/cache/CACHEDIR.TAG
+
+# --- Jellyseerr (settings ignored: sessionSecret + apiKeys) ---
+Jellyseerr/config/anime-list.xml
+
+# --- Home Assistant (YAML config only; .storage + secrets.yaml stay out) ---
+HomeAssistant/config/configuration.yaml
+HomeAssistant/config/automations.yaml
+HomeAssistant/config/scripts.yaml
+HomeAssistant/config/scenes.yaml
+HomeAssistant/config/groups.yaml
+HomeAssistant/config/blueprints/
+
+# --- Nginx Proxy Manager (proxy/stream host defs; DB + keys.json + letsencrypt) ---
+Nginx/data/nginx/access/
+Nginx/data/nginx/dead_host/
+Nginx/data/nginx/default_host/
+Nginx/data/nginx/default_www/
+Nginx/data/nginx/proxy_host/
+Nginx/data/nginx/redirection_host/
+Nginx/data/nginx/stream/
+Nginx/data/nginx/temp/

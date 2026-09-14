@@ -8,7 +8,9 @@ A Docker Compose based home server setup for media management and home automatio
 - `scripts/`:
   - `start_stack.sh` -- boot-verified entry point (mount check + compose up + post-check).
   - `create_dirs.py` -- creates all directories referenced by the compose files.
-  - `sync.sh` -- rsync backup helper.
+  - `sync.sh` -- rsync backup helper (`--config` syncs a curated, credential-free
+    config snapshot into `data/` for git-based DR).
+  - `sync_manifest.txt` -- source of truth for exactly which files land in `data/`.
 - `systemd/`:
   - `cloud-homeserver.service` -- systemd unit that calls `start_stack.sh`.
   - `docker.service.d/wait-for-mount.conf` -- drop-in that forces Docker to wait for the drive mount before starting the daemon.
@@ -132,3 +134,19 @@ docker compose up -d
 ```
 systemctl status cloud-homeserver.service && findmnt -rn -o SOURCE /mnt/drive
 ```
+
+## Config Snapshot / Disaster Recovery
+
+`scripts/sync.sh --config` mirrors a curated, **credential-free** set of config
+files from `$ROOT_DIR` into `data/` and stages them for git. The list lives in
+`scripts/sync_manifest.txt`. Re-run it after changing any config:
+
+```bash
+scripts/sync.sh --config
+git commit -m "chore(config): snapshot service configs"
+git push
+```
+
+Anything containing secrets (API keys, RPC passwords, session tokens,
+certificates, `.env`, databases, logs, caches, library media) is intentionally
+**not** synced — see `data/README.md` for the full list and the restore flow.
