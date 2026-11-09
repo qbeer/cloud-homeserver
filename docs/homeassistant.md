@@ -4,6 +4,17 @@ This document describes the Home Assistant changes added to this repo and the
 reasoning behind them. The live HA instance is expected at
 `/mnt/drive/HomeAssistant/config` (inside the container: `/config`).
 
+## Deployment status
+
+Deployed to the live instance on **2026-11-09** via
+`scripts/deploy_homeassistant.sh`. Verified after restart:
+
+- 11 automations and 9 scripts loaded.
+- Both YAML dashboards (**Home** and **Energy**) registered.
+- All template/helper entities created; all dashboard entity references exist.
+- All 13 TRV setpoints were unchanged across the restart.
+- The heating schedule helper is **off** by default.
+
 ## Current setup at a glance
 
 - Home Assistant 2026.11.0, host networking, privileged container.
@@ -159,8 +170,9 @@ data/HomeAssistant/config/
 `scripts/sync.sh --config` keeps the disaster-recovery snapshot complete.
 
 > **Important:** `data/` is normally a pull-only snapshot generated from the
-> live instance by `scripts/sync.sh --config`. These files are proposed config.
-> Deploy them first (or commit them before running the sync); otherwise
+> live instance by `scripts/sync.sh --config`. These files were deployed on
+> 2026-11-09, so the live instance and the repo now match. If you edit them
+> again, deploy (or commit) before running the sync; otherwise
 > `sync.sh --config` will overwrite them with the current live files.
 
 ## How to apply to the live instance
@@ -209,6 +221,10 @@ Then:
 3. Check `input_number.electricity_price` (default 36 Ft/kWh) and adjust it.
 4. Review the comfort temperatures in `scripts.yaml`.
 5. Rename the plugs to what they actually power.
+6. The yearly counters (`sensor.living_room_plug_this_year` and
+   `sensor.upstairs_plug_this_year`) start at zero on the deployment date and
+   reset on 1 January. For true year-to-date totals, use the Energy dashboard's
+   long-term statistics.
 
 If you only want to try the dashboards without the automations, copy
 `configuration.yaml`, `templates.yaml`, `utility_meters.yaml`, and the

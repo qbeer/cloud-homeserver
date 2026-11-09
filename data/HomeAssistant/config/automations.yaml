@@ -18,6 +18,12 @@
   trigger:
     - platform: state
       entity_id: input_select.house_mode
+      not_from:
+        - unavailable
+        - unknown
+      not_to:
+        - unavailable
+        - unknown
   action:
     - choose:
         - conditions:
