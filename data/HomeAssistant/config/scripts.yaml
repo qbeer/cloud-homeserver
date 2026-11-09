@@ -1,0 +1,310 @@
+# Heating profiles and small utility scripts.
+#
+# The profiles are deliberately conservative. Adjust the temperatures below to
+# taste, then reload scripts (Developer Tools -> YAML -> Scripts) or restart HA.
+
+heating_home:
+  alias: "Heating: Home comfort"
+  icon: mdi:home-thermometer
+  mode: restart
+  sequence:
+    - action: climate.set_hvac_mode
+      target:
+        entity_id:
+          - climate.bathroom_valve_sonoff_a480158110
+          - climate.corridor_valve_sonoff_a4801539d8
+          - climate.laundry_room_valve_sonoff_a480158115
+          - climate.left_bedroom_valve_sonoff_a48015807c
+          - climate.left_side_room_valve_sonoff_a48015861f
+          - climate.living_room_valve_1_sonoff_a4801538ad
+          - climate.livingroom_valve_2_sonoff_a4801543d1
+          - climate.living_room_valve_3_sonoff_a480153a2a
+          - climate.master_bedroom_valve_sonoff_a4801539ca
+          - climate.right_bedroom_valve_sonoff_a4801544da
+          - climate.toilet_valve_sonoff_a480158119
+          - climate.upstairs_bathroom_valve_sonoff_a480158079
+          - climate.upstairs_corridor_valve_sonoff_a4801545ef
+      data:
+        hvac_mode: heat
+      continue_on_error: true
+
+    # Living room + bathrooms
+    - action: climate.set_temperature
+      target:
+        entity_id:
+          - climate.living_room_valve_1_sonoff_a4801538ad
+          - climate.livingroom_valve_2_sonoff_a4801543d1
+          - climate.living_room_valve_3_sonoff_a480153a2a
+          - climate.bathroom_valve_sonoff_a480158110
+          - climate.upstairs_bathroom_valve_sonoff_a480158079
+      data:
+        temperature: 22
+      continue_on_error: true
+
+    # Bedrooms
+    - action: climate.set_temperature
+      target:
+        entity_id:
+          - climate.master_bedroom_valve_sonoff_a4801539ca
+          - climate.left_bedroom_valve_sonoff_a48015807c
+          - climate.right_bedroom_valve_sonoff_a4801544da
+      data:
+        temperature: 21
+      continue_on_error: true
+
+    # Hallways, laundry, toilet, spare room
+    - action: climate.set_temperature
+      target:
+        entity_id:
+          - climate.corridor_valve_sonoff_a4801539d8
+          - climate.upstairs_corridor_valve_sonoff_a4801545ef
+          - climate.laundry_room_valve_sonoff_a480158115
+          - climate.toilet_valve_sonoff_a480158119
+          - climate.left_side_room_valve_sonoff_a48015861f
+      data:
+        temperature: 20
+      continue_on_error: true
+
+heating_sleep:
+  alias: "Heating: Sleep"
+  icon: mdi:bed
+  mode: restart
+  sequence:
+    - action: climate.set_hvac_mode
+      target:
+        entity_id:
+          - climate.bathroom_valve_sonoff_a480158110
+          - climate.corridor_valve_sonoff_a4801539d8
+          - climate.laundry_room_valve_sonoff_a480158115
+          - climate.left_bedroom_valve_sonoff_a48015807c
+          - climate.left_side_room_valve_sonoff_a48015861f
+          - climate.living_room_valve_1_sonoff_a4801538ad
+          - climate.livingroom_valve_2_sonoff_a4801543d1
+          - climate.living_room_valve_3_sonoff_a480153a2a
+          - climate.master_bedroom_valve_sonoff_a4801539ca
+          - climate.right_bedroom_valve_sonoff_a4801544da
+          - climate.toilet_valve_sonoff_a480158119
+          - climate.upstairs_bathroom_valve_sonoff_a480158079
+          - climate.upstairs_corridor_valve_sonoff_a4801545ef
+      data:
+        hvac_mode: heat
+      continue_on_error: true
+
+    # Bathrooms stay slightly warmer
+    - action: climate.set_temperature
+      target:
+        entity_id:
+          - climate.bathroom_valve_sonoff_a480158110
+          - climate.upstairs_bathroom_valve_sonoff_a480158079
+      data:
+        temperature: 20
+      continue_on_error: true
+
+    # Bedrooms
+    - action: climate.set_temperature
+      target:
+        entity_id:
+          - climate.master_bedroom_valve_sonoff_a4801539ca
+          - climate.left_bedroom_valve_sonoff_a48015807c
+          - climate.right_bedroom_valve_sonoff_a4801544da
+      data:
+        temperature: 19
+      continue_on_error: true
+
+    # Living areas, hallways, laundry, toilet, spare room
+    - action: climate.set_temperature
+      target:
+        entity_id:
+          - climate.living_room_valve_1_sonoff_a4801538ad
+          - climate.livingroom_valve_2_sonoff_a4801543d1
+          - climate.living_room_valve_3_sonoff_a480153a2a
+          - climate.corridor_valve_sonoff_a4801539d8
+          - climate.upstairs_corridor_valve_sonoff_a4801545ef
+          - climate.laundry_room_valve_sonoff_a480158115
+          - climate.toilet_valve_sonoff_a480158119
+          - climate.left_side_room_valve_sonoff_a48015861f
+      data:
+        temperature: 18
+      continue_on_error: true
+
+heating_away:
+  alias: "Heating: Away (frost protection)"
+  icon: mdi:home-export-outline
+  mode: restart
+  sequence:
+    - action: climate.set_hvac_mode
+      target:
+        entity_id:
+          - climate.bathroom_valve_sonoff_a480158110
+          - climate.corridor_valve_sonoff_a4801539d8
+          - climate.laundry_room_valve_sonoff_a480158115
+          - climate.left_bedroom_valve_sonoff_a48015807c
+          - climate.left_side_room_valve_sonoff_a48015861f
+          - climate.living_room_valve_1_sonoff_a4801538ad
+          - climate.livingroom_valve_2_sonoff_a4801543d1
+          - climate.living_room_valve_3_sonoff_a480153a2a
+          - climate.master_bedroom_valve_sonoff_a4801539ca
+          - climate.right_bedroom_valve_sonoff_a4801544da
+          - climate.toilet_valve_sonoff_a480158119
+          - climate.upstairs_bathroom_valve_sonoff_a480158079
+          - climate.upstairs_corridor_valve_sonoff_a4801545ef
+      data:
+        hvac_mode: heat
+      continue_on_error: true
+
+    - action: climate.set_temperature
+      target:
+        entity_id:
+          - climate.bathroom_valve_sonoff_a480158110
+          - climate.corridor_valve_sonoff_a4801539d8
+          - climate.laundry_room_valve_sonoff_a480158115
+          - climate.left_bedroom_valve_sonoff_a48015807c
+          - climate.left_side_room_valve_sonoff_a48015861f
+          - climate.living_room_valve_1_sonoff_a4801538ad
+          - climate.livingroom_valve_2_sonoff_a4801543d1
+          - climate.living_room_valve_3_sonoff_a480153a2a
+          - climate.master_bedroom_valve_sonoff_a4801539ca
+          - climate.right_bedroom_valve_sonoff_a4801544da
+          - climate.toilet_valve_sonoff_a480158119
+          - climate.upstairs_bathroom_valve_sonoff_a480158079
+          - climate.upstairs_corridor_valve_sonoff_a4801545ef
+      data:
+        temperature: 16
+      continue_on_error: true
+
+heating_vacation:
+  alias: "Heating: Vacation (minimum)"
+  icon: mdi:airplane
+  mode: restart
+  sequence:
+    - action: climate.set_hvac_mode
+      target:
+        entity_id:
+          - climate.bathroom_valve_sonoff_a480158110
+          - climate.corridor_valve_sonoff_a4801539d8
+          - climate.laundry_room_valve_sonoff_a480158115
+          - climate.left_bedroom_valve_sonoff_a48015807c
+          - climate.left_side_room_valve_sonoff_a48015861f
+          - climate.living_room_valve_1_sonoff_a4801538ad
+          - climate.livingroom_valve_2_sonoff_a4801543d1
+          - climate.living_room_valve_3_sonoff_a480153a2a
+          - climate.master_bedroom_valve_sonoff_a4801539ca
+          - climate.right_bedroom_valve_sonoff_a4801544da
+          - climate.toilet_valve_sonoff_a480158119
+          - climate.upstairs_bathroom_valve_sonoff_a480158079
+          - climate.upstairs_corridor_valve_sonoff_a4801545ef
+      data:
+        hvac_mode: heat
+      continue_on_error: true
+
+    - action: climate.set_temperature
+      target:
+        entity_id:
+          - climate.bathroom_valve_sonoff_a480158110
+          - climate.corridor_valve_sonoff_a4801539d8
+          - climate.laundry_room_valve_sonoff_a480158115
+          - climate.left_bedroom_valve_sonoff_a48015807c
+          - climate.left_side_room_valve_sonoff_a48015861f
+          - climate.living_room_valve_1_sonoff_a4801538ad
+          - climate.livingroom_valve_2_sonoff_a4801543d1
+          - climate.living_room_valve_3_sonoff_a480153a2a
+          - climate.master_bedroom_valve_sonoff_a4801539ca
+          - climate.right_bedroom_valve_sonoff_a4801544da
+          - climate.toilet_valve_sonoff_a480158119
+          - climate.upstairs_bathroom_valve_sonoff_a480158079
+          - climate.upstairs_corridor_valve_sonoff_a4801545ef
+      data:
+        temperature: 14
+      continue_on_error: true
+
+enable_trv_window_detection:
+  alias: "TRV: enable window detection"
+  icon: mdi:window-open-variant
+  mode: single
+  sequence:
+    - action: switch.turn_on
+      target:
+        entity_id:
+          - switch.bathroom_valve_sonoff_a480158110_window_switch
+          - switch.corridor_valve_sonoff_a4801539d8_window_switch
+          - switch.laundry_room_valve_sonoff_a480158115_window_switch
+          - switch.left_bedroom_valve_sonoff_a48015807c_window_switch
+          - switch.left_side_room_valve_sonoff_a48015861f_window_switch
+          - switch.living_room_valve_1_sonoff_a4801538ad_window_switch
+          - switch.livingroom_valve_2_sonoff_a4801543d1_window_switch
+          - switch.living_room_valve_3_sonoff_a480153a2a_window_switch
+          - switch.master_bedroom_valve_sonoff_a4801539ca_window_switch
+          - switch.right_bedroom_valve_sonoff_a4801544da_window_switch
+          - switch.toilet_valve_sonoff_a480158119_window_switch
+          - switch.upstairs_bathroom_valve_sonoff_a480158079_window_switch
+          - switch.upstairs_corridor_valve_sonoff_a4801545ef_window_switch
+      continue_on_error: true
+
+vacuum_start:
+  alias: "Vacuum: start cleaning"
+  icon: mdi:robot-vacuum
+  mode: single
+  sequence:
+    - action: vacuum.start
+      target:
+        entity_id: vacuum.xiaomi_de_1154971848_c102gl
+
+vacuum_dock:
+  alias: "Vacuum: return to dock"
+  icon: mdi:home-import-outline
+  mode: single
+  sequence:
+    - action: vacuum.return_to_base
+      target:
+        entity_id: vacuum.xiaomi_de_1154971848_c102gl
+
+camera_arm:
+  alias: "Camera: arm (Away)"
+  icon: mdi:cctv
+  mode: single
+  sequence:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.tapo_c520ws_privacy
+      continue_on_error: true
+    - action: select.select_option
+      target:
+        entity_id: select.tapo_c520ws_motion_detection
+      data:
+        option: "on"
+      continue_on_error: true
+    - action: switch.turn_on
+      target:
+        entity_id:
+          - switch.tapo_c520ws_notifications
+          - switch.tapo_c520ws_trigger_alarm_on_motion_detection
+          - switch.tapo_c520ws_trigger_alarm_on_people_detection
+          - switch.tapo_c520ws_trigger_alarm_on_tamper_detection
+          - switch.tapo_c520ws_record_to_sd_card
+          - switch.tapo_c520ws_auto_track
+          - switch.tapo_c520ws_smart_track_people
+      continue_on_error: true
+
+camera_disarm:
+  alias: "Camera: disarm (privacy on)"
+  icon: mdi:eye-off
+  mode: single
+  sequence:
+    - action: select.select_option
+      target:
+        entity_id: select.tapo_c520ws_motion_detection
+      data:
+        option: "off"
+      continue_on_error: true
+    - action: switch.turn_off
+      target:
+        entity_id:
+          - switch.tapo_c520ws_trigger_alarm_on_motion_detection
+          - switch.tapo_c520ws_trigger_alarm_on_people_detection
+          - switch.tapo_c520ws_auto_track
+          - switch.tapo_c520ws_smart_track_people
+      continue_on_error: true
+    - action: switch.turn_on
+      target:
+        entity_id: switch.tapo_c520ws_privacy
+      continue_on_error: true

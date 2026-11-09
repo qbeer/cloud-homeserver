@@ -1,1 +1,320 @@
-[]
+# Starter automation pack for the SONOFF TRVs, plugs, vacuum, and system health.
+#
+# Design choices:
+#   - Heating is driven by a single House mode helper (Home / Away / Sleep /
+#     Vacation), so it is easy to override from the dashboard.
+#   - Schedules only flip between Home and Sleep; Away/Vacation are manual.
+#   - Alerts use persistent notifications, which work without a mobile app.
+#     After installing the Home Assistant Companion app, replace the
+#     persistent_notification.create actions with notify.mobile_app_<phone>.
+#
+# Reload after editing: Developer Tools -> YAML -> Automations.
+
+- id: heating_apply_house_mode
+  alias: "Heating: apply house mode"
+  description: >-
+    Applies the selected heating profile when the house mode changes. It does
+    not re-apply a profile on restart, so manual TRV changes are preserved.
+  trigger:
+    - platform: state
+      entity_id: input_select.house_mode
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_select.house_mode
+              state: Away
+          sequence:
+            - action: script.heating_away
+        - conditions:
+            - condition: state
+              entity_id: input_select.house_mode
+              state: Sleep
+          sequence:
+            - action: script.heating_sleep
+        - conditions:
+            - condition: state
+              entity_id: input_select.house_mode
+              state: Vacation
+          sequence:
+            - action: script.heating_vacation
+      default:
+        - action: script.heating_home
+  mode: single
+
+- id: heating_morning
+  alias: "Heating: morning comfort"
+  description: >-
+    Switches from Sleep to Home at 06:30 when the heating schedule is enabled.
+  trigger:
+    - platform: time
+      at: "06:30:00"
+  condition:
+    - condition: state
+      entity_id: input_boolean.heating_schedule
+      state: "on"
+    - condition: state
+      entity_id: input_select.house_mode
+      state: Sleep
+  action:
+    - action: input_select.select_option
+      target:
+        entity_id: input_select.house_mode
+      data:
+        option: Home
+  mode: single
+
+- id: heating_night
+  alias: "Heating: night mode"
+  description: >-
+    Switches from Home to Sleep at 22:30 when the heating schedule is enabled.
+  trigger:
+    - platform: time
+      at: "22:30:00"
+  condition:
+    - condition: state
+      entity_id: input_boolean.heating_schedule
+      state: "on"
+    - condition: state
+      entity_id: input_select.house_mode
+      state: Home
+  action:
+    - action: input_select.select_option
+      target:
+        entity_id: input_select.house_mode
+      data:
+        option: Sleep
+  mode: single
+
+- id: battery_low_alert
+  alias: "Battery: low battery alert"
+  description: >-
+    Notifies when any TRV, room sensor, or vacuum battery drops below 20%.
+  trigger:
+    - platform: numeric_state
+      entity_id:
+        - sensor.bathroom_temperature_sensor_sonoff_a48015810f_battery
+        - sensor.bathroom_valve_sonoff_a480158110_battery
+        - sensor.corridor_valve_sonoff_a4801539d8_battery
+        - sensor.laundry_room_valve_sonoff_a480158115_battery
+        - sensor.left_bedroom_temperature_sensor_sonoff_a480150c1f_battery
+        - sensor.left_bedroom_valve_sonoff_a48015807c_battery
+        - sensor.left_side_room_valve_sonoff_a48015861f_battery
+        - sensor.living_room_sonoff_a480150c26_battery
+        - sensor.living_room_valve_1_sonoff_a4801538ad_battery
+        - sensor.livingroom_valve_2_sonoff_a4801543d1_battery
+        - sensor.living_room_valve_3_sonoff_a480153a2a_battery
+        - sensor.master_bedroom_sonoff_a480150c29_battery
+        - sensor.master_bedroom_valve_sonoff_a4801539ca_battery
+        - sensor.right_bedroom_temperature_sensor_sonoff_a480150c56_battery
+        - sensor.right_bedroom_valve_sonoff_a4801544da_battery
+        - sensor.toilet_valve_sonoff_a480158119_battery
+        - sensor.upstairs_bathroom_valve_sonoff_a480158079_battery
+        - sensor.upstairs_corridor_valve_sonoff_a4801545ef_battery
+        - sensor.xiaomi_de_1154971848_c102gl_battery_level_p_3_1
+      below: 20
+      for: "00:10:00"
+  action:
+    - action: persistent_notification.create
+      data:
+        title: "Low battery: {{ trigger.to_state.name }}"
+        message: >-
+          {{ trigger.to_state.name }} is at {{ trigger.to_state.state }}%.
+          Replace or recharge the battery soon.
+        notification_id: "low_battery_{{ trigger.entity_id | replace('.', '_') }}"
+  mode: queued
+  max: 10
+
+- id: device_offline_alert
+  alias: "System: device offline alert"
+  description: >-
+    Notifies when a TRV, plug, or the Tapo camera has been unavailable for
+    30 minutes.
+  trigger:
+    - platform: state
+      entity_id:
+        - climate.bathroom_valve_sonoff_a480158110
+        - climate.corridor_valve_sonoff_a4801539d8
+        - climate.laundry_room_valve_sonoff_a480158115
+        - climate.left_bedroom_valve_sonoff_a48015807c
+        - climate.left_side_room_valve_sonoff_a48015861f
+        - climate.living_room_valve_1_sonoff_a4801538ad
+        - climate.livingroom_valve_2_sonoff_a4801543d1
+        - climate.living_room_valve_3_sonoff_a480153a2a
+        - climate.master_bedroom_valve_sonoff_a4801539ca
+        - climate.right_bedroom_valve_sonoff_a4801544da
+        - climate.toilet_valve_sonoff_a480158119
+        - climate.upstairs_bathroom_valve_sonoff_a480158079
+        - climate.upstairs_corridor_valve_sonoff_a4801545ef
+        - switch.livingroom_plug_repeater_sonoff_a480158066_1
+        - switch.upstairs_plug_repeater_sonoff_a480158071_1
+        - camera.tapo_c520ws_hd_stream_direct
+      to: "unavailable"
+      for: "00:30:00"
+  action:
+    - action: persistent_notification.create
+      data:
+        title: "Device offline: {{ trigger.to_state.name }}"
+        message: >-
+          {{ trigger.to_state.name }} has been unavailable for 30 minutes.
+          Check the Zigbee bridge, the battery, and the signal path.
+        notification_id: "offline_{{ trigger.entity_id | replace('.', '_') }}"
+  mode: queued
+  max: 20
+
+- id: humidity_high_alert
+  alias: "Climate: high humidity alert"
+  description: >-
+    Notifies when a room stays above 75% humidity for 15 minutes. Useful in
+    bathrooms and bedrooms to avoid damp and mould.
+  trigger:
+    - platform: numeric_state
+      entity_id:
+        - sensor.bathroom_temperature_sensor_sonoff_a48015810f_humidity
+        - sensor.living_room_sonoff_a480150c26_humidity
+        - sensor.master_bedroom_sonoff_a480150c29_humidity
+        - sensor.left_bedroom_temperature_sensor_sonoff_a480150c1f_humidity
+        - sensor.right_bedroom_temperature_sensor_sonoff_a480150c56_humidity
+      above: 75
+      for: "00:15:00"
+  condition:
+    - condition: not
+      conditions:
+        - condition: state
+          entity_id: input_select.house_mode
+          state: Away
+  action:
+    - action: persistent_notification.create
+      data:
+        title: "High humidity: {{ trigger.to_state.name }}"
+        message: >-
+          {{ trigger.to_state.name }} has been above 75% for 15 minutes.
+          Open a window or run ventilation to avoid damp and mould.
+        notification_id: "humidity_{{ trigger.entity_id | replace('.', '_') }}"
+  mode: queued
+  max: 10
+
+- id: plug_high_power_alert
+  alias: "Energy: high plug load"
+  description: >-
+    Notifies when either monitored plug draws more than 2500 W for 10 minutes.
+  trigger:
+    - platform: numeric_state
+      entity_id:
+        - sensor.livingroom_plug_repeater_sonoff_a480158066_power
+        - sensor.upstairs_plug_repeater_sonoff_a480158071_power
+      above: 2500
+      for: "00:10:00"
+  action:
+    - action: persistent_notification.create
+      data:
+        title: "High plug load: {{ trigger.to_state.name }}"
+        message: >-
+          {{ trigger.to_state.name }} is drawing
+          {{ trigger.to_state.state }} W for 10 minutes.
+          Check what is plugged in.
+        notification_id: "high_power_{{ trigger.entity_id | replace('.', '_') }}"
+  mode: queued
+  max: 10
+
+- id: energy_weekly_summary
+  alias: "Energy: weekly summary"
+  description: >-
+    Creates a persistent notification every Sunday evening with the plug energy
+    totals and estimated cost.
+  trigger:
+    - platform: time
+      at: "19:00:00"
+  condition:
+    - condition: time
+      weekday:
+        - sun
+  action:
+    - action: persistent_notification.create
+      data:
+        title: "Weekly energy summary"
+        message: >-
+          Today: {{ states('sensor.total_energy_today') }} kWh
+          ({{ states('sensor.total_energy_cost_today') }} Ft)
+
+          This month: {{ states('sensor.total_energy_this_month') }} kWh
+          ({{ states('sensor.total_energy_cost_this_month') }} Ft)
+
+          This year: {{ states('sensor.total_energy_this_year') }} kWh
+          ({{ states('sensor.total_energy_cost_this_year') }} Ft)
+
+          Living room plug:
+          {{ states('sensor.livingroom_plug_repeater_sonoff_a480158066_energy_day') }} kWh today,
+          {{ states('sensor.livingroom_plug_repeater_sonoff_a480158066_energy_month') }} kWh this month.
+
+          Upstairs plug:
+          {{ states('sensor.upstairs_plug_repeater_sonoff_a480158071_energy_day') }} kWh today,
+          {{ states('sensor.upstairs_plug_repeater_sonoff_a480158071_energy_month') }} kWh this month.
+        notification_id: energy_weekly_summary
+  mode: single
+
+- id: vacuum_finished
+  alias: "Vacuum: finished cleaning"
+  description: >-
+    Notifies when the Xiaomi vacuum returns to the dock.
+  trigger:
+    - platform: state
+      entity_id: vacuum.xiaomi_de_1154971848_c102gl
+      to: docked
+  action:
+    - action: persistent_notification.create
+      data:
+        title: "Vacuum finished"
+        message: >-
+          The Xiaomi X20+ is docked. Battery:
+          {{ states('sensor.xiaomi_de_1154971848_c102gl_battery_level_p_3_1') }}%.
+        notification_id: vacuum_finished
+  mode: single
+
+- id: vacuum_fault
+  alias: "Vacuum: fault reported"
+  description: >-
+    Notifies when the vacuum reports a non-zero fault code.
+  trigger:
+    - platform: state
+      entity_id: sensor.xiaomi_de_1154971848_c102gl_fault_p_2_2
+  condition:
+    - condition: template
+      value_template: >-
+        {{ trigger.to_state.state not in ['0', 'unknown', 'unavailable'] }}
+  action:
+    - action: persistent_notification.create
+      data:
+        title: "Vacuum fault"
+        message: >-
+          The Xiaomi X20+ reported fault code
+          {{ trigger.to_state.state }}. Open the Xiaomi app for details.
+        notification_id: vacuum_fault
+  mode: single
+
+- id: backup_health_check
+  alias: "System: weekly backup health check"
+  description: >-
+    Warns every Monday if there has not been a successful automatic backup in
+    the last 7 days.
+  trigger:
+    - platform: time
+      at: "10:00:00"
+  condition:
+    - condition: time
+      weekday:
+        - mon
+    - condition: template
+      value_template: >-
+        {% set last = states('sensor.backup_last_successful_automatic_backup') %}
+        {{ last in ['unknown', 'unavailable', 'None'] or
+           (as_timestamp(now()) - as_timestamp(last)) > 7 * 86400 }}
+  action:
+    - action: persistent_notification.create
+      data:
+        title: "Backup check failed"
+        message: >-
+          No successful automatic backup was found in the last 7 days.
+          Open Settings -> System -> Backups and create a backup.
+        notification_id: backup_health_check
+  mode: single

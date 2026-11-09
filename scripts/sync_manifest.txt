@@ -32,7 +32,10 @@ HomeAssistant/config/configuration.yaml
 HomeAssistant/config/automations.yaml
 HomeAssistant/config/scripts.yaml
 HomeAssistant/config/scenes.yaml
+HomeAssistant/config/templates.yaml
+HomeAssistant/config/utility_meters.yaml
 HomeAssistant/config/groups.yaml
+HomeAssistant/config/dashboards/
 HomeAssistant/config/blueprints/
 
 # --- Nginx Proxy Manager (proxy/stream host defs; DB + keys.json + letsencrypt) ---

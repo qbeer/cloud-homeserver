@@ -9,3 +9,61 @@ frontend:
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
+
+# ---------------------------------------------------------------------------
+# Helpers used by the heating profiles and the energy dashboard.
+# ---------------------------------------------------------------------------
+input_select:
+  house_mode:
+    name: House mode
+    options:
+      - Home
+      - Away
+      - Sleep
+      - Vacation
+    initial: Home
+    icon: mdi:home-account
+
+input_boolean:
+  heating_schedule:
+    name: Heating schedule
+    icon: mdi:calendar-clock
+    # Off by default: turn it on from the dashboard once you have reviewed the
+    # comfort/sleep temperatures in scripts.yaml.
+    initial: false
+
+input_number:
+  electricity_price:
+    name: Electricity price
+    min: 0
+    max: 200
+    step: 0.1
+    unit_of_measurement: "Ft/kWh"
+    icon: mdi:currency-huf
+    initial: 36
+    mode: box
+
+# ---------------------------------------------------------------------------
+# Derived sensors + year-to-date plug counters.
+# ---------------------------------------------------------------------------
+template: !include templates.yaml
+utility_meter: !include utility_meters.yaml
+
+# ---------------------------------------------------------------------------
+# YAML dashboards. They appear in the sidebar under "Home" and "Energy".
+# Set "Home" as your default dashboard in Profile -> Dashboard.
+# ---------------------------------------------------------------------------
+lovelace:
+  dashboards:
+    home-dashboard:
+      mode: yaml
+      title: Home
+      icon: mdi:home
+      show_in_sidebar: true
+      filename: dashboards/home.yaml
+    energy-dashboard:
+      mode: yaml
+      title: Energy
+      icon: mdi:lightning-bolt
+      show_in_sidebar: true
+      filename: dashboards/energy.yaml
